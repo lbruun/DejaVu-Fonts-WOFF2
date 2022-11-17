@@ -1,0 +1,87 @@
+name: Build
+
+on:
+  push:
+    branches: [ "main" ]
+    paths-ignore:
+      - '**/README.md'
+  pull_request:
+    branches: [ "main" ]
+    paths-ignore:
+      - '**/README.md'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Build Google woff2 tool
+      run: |
+        git clone --recursive https://github.com/google/woff2.git
+        cd woff2
+        make clean all
+        
+    - name: Download and unpack DejaVu Fonts
+      run: |
+        dejavu_fonts_version="2.37"
+        
+        # Download full set DejaVu fonts
+        wget -O dejavu-fonts.tar.bz2 https://sourceforge.net/projects/dejavu/files/dejavu/${dejavu_fonts_version}/dejavu-fonts-ttf-${dejavu_fonts_version}.tar.bz2
+        bzip2 -d dejavu-fonts.tar.bz2
+        mkdir fonts_tmp
+        cd fonts_tmp
+        tar xf ../dejavu-fonts.tar
+        rm -r -f ../dejavu-fonts.tar
+        cd dejavu-fonts-ttf-${dejavu_fonts_version}
+        mv ttf ${GITHUB_WORKSPACE}/
+        cp LICENSE ${GITHUB_WORKSPACE}/ttf
+        cd ${GITHUB_WORKSPACE}
+        rm -r -f fonts_tmp
+        rm -r -f dejavu-fonts.tar.bz2
+        
+        # Download limited set DejaVu fonts (only Latin, Greek an Cyrillic)
+        wget -O dejavu-fonts.tar.bz2 https://sourceforge.net/projects/dejavu/files/dejavu/${dejavu_fonts_version}/dejavu-lgc-fonts-ttf-${dejavu_fonts_version}.tar.bz2
+        bzip2 -d dejavu-fonts.tar.bz2
+        mkdir fonts_tmp
+        cd fonts_tmp
+        tar xf ../dejavu-fonts.tar
+        rm -r -f ../dejavu-fonts.tar
+        cd dejavu-lgc-fonts-ttf-${dejavu_fonts_version}
+        mv ttf ${GITHUB_WORKSPACE}/ttf-lgc
+        cp LICENSE ${GITHUB_WORKSPACE}/ttf-lgc/
+        cd ${GITHUB_WORKSPACE}
+        rm -r -f fonts_tmp
+        rm -r -f dejavu-fonts.tar.bz2
+
+
+    - name: Convert TTF to WOFF2
+      run: |
+        cd ttf
+        for f in $(ls *.ttf); do
+          echo "Converting $f to woff2 format"
+          ../woff2/woff2_compress $f
+        done        
+        tar czf dejavu_fonts.tar.gz *.woff2 LICENSE
+        cd ${GITHUB_WORKSPACE}
+
+        cd ttf-lgc
+        for f in $(ls *.ttf); do
+          echo "Converting $f to woff2 format"
+          ../woff2/woff2_compress $f
+        done        
+        tar czf dejavu_lgc_fonts.tar.gz *.woff2 LICENSE
+        cd ${GITHUB_WORKSPACE}
+        
+        mv ttf/ woff2-fonts/
+        mv ttf-lgc/ woff2-lgc-fonts/
+
+
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v3
+      with:
+        path: |
+          woff2-fonts/dejavu_fonts.tar.gz
+          woff2-lgc-fonts/dejavu_lgc_fonts.tar.gz
+        
