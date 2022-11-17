@@ -3,7 +3,7 @@
 Re-publishes [DejaVu Fonts](https://github.com/dejavu-fonts/dejavu-fonts) in WOFF2 format. 
 
 WOFF2 format is the format used on the web. All major browsers support WOFF2 format, with the exception
-of IE11 which can understand WOFF1, but not WOFF2.
+of IE11 which can understand WOFF1, but not WOFF2. See [Can-I-Use](https://caniuse.com/woff2) for more information.
 
 The project uses Google's [WOFF2 tool](https://github.com/google/woff2) to convert from TrueType format to WOFF2 format.
 (technically, the fonts are still in TrueType format, as the WOFF2 format is solely about compression)
